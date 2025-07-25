@@ -1,9 +1,7 @@
 /* src/index.css */
 
 /* Tailwind CSS directives - REQUIRED for Tailwind to work */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+
 
 /* Custom global styles (optional): */
 body {
