@@ -47,10 +47,10 @@ const Quiz = ({ navigate, currentPath }) => {
     setUserAnswers(updatedUserAnswers); // Update state
 
     let newPoints = user.points;
-    let isCorrect = false;
+    // REMOVE THIS LINE: let isCorrect = false; <--- THIS IS THE FIX
 
     if (selectedOption === currentQuestion.answer) {
-      isCorrect = true;
+      // REMOVE THIS LINE: isCorrect = true; <--- THIS IS THE FIX
       newPoints += 2; // Award 2 points for correct answer in quiz/boss battle
       setFeedback(currentQuestion.feedback_correct || 'Correct!');
     } else {
@@ -81,6 +81,8 @@ const Quiz = ({ navigate, currentPath }) => {
           }
         });
 
+        // The 'quizPassed' variable is used here, but it's passed to navigate, not directly rendered.
+        // It's effectively used, so this line is fine and not causing a warning.
         const quizPassed = (finalScore / totalQuestions) >= 0.7;
         let newLevel = user.current_level;
         let finalPoints = newPoints; // Use newPoints updated from current submission

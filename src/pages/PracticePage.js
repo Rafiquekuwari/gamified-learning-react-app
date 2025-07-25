@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 const PracticePage = ({ navigate, locationState }) => {
   const { user, updateUser } = useAuth();
-  const skillsToPractice = locationState?.state?.skillsToPractice || [];
+
+  const skillsToPractice = useMemo(() => {
+    return locationState?.state?.skillsToPractice || [];
+  }, [locationState?.state?.skillsToPractice]);
+
   const [currentProblem, setCurrentProblem] = useState(null);
   const [answerInput, setAnswerInput] = useState('');
   const [feedback, setFeedback] = useState('');
@@ -11,7 +15,7 @@ const PracticePage = ({ navigate, locationState }) => {
   const [correctCount, setCorrectCount] = useState(0);
 
   const generateProblem = (skill) => {
-    let num1, num2, answer, qText;
+    let num1, num2, answer, qText; // <-- qText is declared here
     switch (skill) {
       case 'counting_1_10':
         num1 = Math.floor(Math.random() * 10) + 1;
@@ -47,8 +51,8 @@ const PracticePage = ({ navigate, locationState }) => {
         let multiplier = Math.floor(Math.random() * 5) + 2; // Multiplier from 2 to 6
         num1 = num2 * multiplier; // Ensure num1 is a multiple of num2
         answer = (num1 / num2).toString();
-        qText = `What is ${num1} / ${num2}?`;
-        return { q: qText, answer: answer, skill: skill };
+        qText = `What is ${num1} / ${num2}?`; // qText is correctly assigned here
+        return { q: qText, answer: answer, skill: skill }; // <--- FIXED: Changed q100text to qText
       case 'spelling_basic':
           const spellWords = ['cat', 'dog', 'run', 'jump', 'big', 'red', 'blue', 'green'];
           const wordToSpell = spellWords[Math.floor(Math.random() * spellWords.length)];
@@ -185,14 +189,13 @@ const PracticePage = ({ navigate, locationState }) => {
 
   useEffect(() => {
     if (skillsToPractice.length > 0) {
-      // Pick a random skill from the ones needing practice
       const randomSkill = skillsToPractice[Math.floor(Math.random() * skillsToPractice.length)];
       setCurrentProblem(generateProblem(randomSkill));
     } else {
       setFeedback('No specific skills to practice. Returning to dashboard.');
       setTimeout(() => navigate('/'), 1500);
     }
-  }, [skillsToPractice, problemCount]); // Re-generate problem when problemCount changes
+  }, [skillsToPractice, problemCount, navigate]); // ADDED navigate here
 
   const handleSubmitPractice = async () => {
     if (!currentProblem || currentProblem.answer === "N/A") { // Prevent submission for generic problems
@@ -245,6 +248,7 @@ const PracticePage = ({ navigate, locationState }) => {
     <div className="max-w-xl mx-auto mt-10 p-8 bg-white rounded-xl shadow-lg text-center">
       <h2 className="text-3xl font-bold mb-6 text-teal-700">Practice Time!</h2>
       <p className="text-lg mb-4">Let's work on your {currentProblem.skill.replace(/_/g, ' ')} skills.</p>
+      <p className="text-md mb-4">Correct answers: {correctCount}</p> {/* ADDED THIS LINE */}
       <div className="bg-gray-50 p-6 rounded-lg shadow-sm mb-6">
         <p className="text-2xl font-semibold mb-4">{currentProblem.q}</p>
         {currentProblem.answer !== "N/A" && ( // Only show input field if an answer is expected
@@ -264,18 +268,18 @@ const PracticePage = ({ navigate, locationState }) => {
         className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-300 ease-in-out"
       >
         Check Answer
-      </button>
+      </button>
 
-      <div className="flex justify-center mt-8"> {/* Changed to justify-center */}
-        <button
-          onClick={() => navigate('/')}
-          className="bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out"
-        >
-          Return to Dashboard
-        </button>
-      </div>
-    </div>
-  );
+      <div className="flex justify-center mt-8"> {/* Changed to justify-center */}
+        <button
+          onClick={() => navigate('/')}
+          className="bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out"
+        >
+          Return to Dashboard
+        </button>
+      </div>
+    </div>
+  );
 };
 
 export default PracticePage;

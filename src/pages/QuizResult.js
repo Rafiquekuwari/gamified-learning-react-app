@@ -8,7 +8,7 @@ const QuizResult = ({ navigate, locationState }) => {
   const total = locationState?.state?.total ?? 0;
   const newLevel = locationState?.state?.newLevel ?? (user?.current_level || 1);
   const quizSkills = locationState?.state?.quizSkills || [];
-  const quizPassed = locationState?.state?.quizPassed ?? false;
+  // const quizPassed = locationState?.state?.quizPassed ?? false;
   const nextContentId = locationState?.state?.nextContentId; // Retrieve nextContentId
 
 

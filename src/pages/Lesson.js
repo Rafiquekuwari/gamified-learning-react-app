@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { initialContent } from '../constants/contentData'; // Import initialContent
 
 const Lesson = ({ navigate, currentPath }) => {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser } = useAuth(); // updateUser is a dependency
   const contentId = currentPath.split('/learn/')[1];
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,6 +34,7 @@ const Lesson = ({ navigate, currentPath }) => {
               // Set proficiency to 0.6 (60%) for completing a lesson/activity
               updatedSkillProficiency[skill] = Math.max(updatedSkillProficiency[skill] || 0, 0.6); // Only increase
             });
+            // Calling updateUser here means it's a dependency for this useEffect
             updateUser({ ...user, progress_data: { ...user.progress_data, skillProficiency: updatedSkillProficiency } });
           }
         } else {
@@ -43,7 +44,9 @@ const Lesson = ({ navigate, currentPath }) => {
       }, 500);
     };
     fetchContent();
-  }, [contentId, user]); // Depend on contentId and user to re-fetch/update on changes
+    // Add updateUser to the dependency array. It's a stable function from context,
+    // but the linter wants it explicitly listed.
+  }, [contentId, user, updateUser]); // <--- ADDED updateUser HERE
 
   const handleNext = async () => { // Made async to await updateUser
     if (content && content.next_content_id) {
@@ -140,6 +143,7 @@ const Lesson = ({ navigate, currentPath }) => {
               content.skill_tags.forEach(skill => {
                 updatedSkillProficiency[skill] = Math.max(updatedSkillProficiency[skill] || 0, 0.6);
               });
+              // Calling updateUser here means it's a dependency for renderContent and thus its parent Lesson
               updateUser({ ...user, progress_data: { ...user.progress_data, skillProficiency: updatedSkillProficiency } });
             }
             setTimeout(handleNext, 1500);
@@ -196,6 +200,7 @@ const Lesson = ({ navigate, currentPath }) => {
               content.skill_tags.forEach(skill => {
                 updatedSkillProficiency[skill] = Math.max(updatedSkillProficiency[skill] || 0, 0.6);
               });
+              // Calling updateUser here means it's a dependency for renderContent and thus its parent Lesson
               updateUser({ ...user, progress_data: { ...user.progress_data, skillProficiency: updatedSkillProficiency } });
             }
             setTimeout(handleNext, 1500);
