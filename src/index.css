@@ -1,0 +1,15 @@
+/* src/index.css */
+
+/* Tailwind CSS directives - REQUIRED for Tailwind to work */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom global styles (optional): */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  /* Background is handled by components, but can be a fallback here */
+  /* background-color: #e0f7fa; */
+  color: #333;
+  line-height: 1.6;
+}
