@@ -18,7 +18,7 @@ const Header = ({ navigate }) => {
         <div className="flex items-center space-x-4">
           <img src={user.avatar_choice} alt="Avatar" className="w-9 h-9 rounded-full border-2 border-white" />
           <span className="text-lg">
-            {user.username} | Points: {user.points} | Level: {user.current_level}
+            {user.username} | Points: {user.points} | Math Level: {user.subject_levels.math} | Literacy Level: {user.subject_levels.literacy}
           </span>
           <button
             onClick={handleLogout}

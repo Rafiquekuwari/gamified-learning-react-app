@@ -25,16 +25,15 @@ const Lesson = ({ navigate, currentPath }) => {
           (c.type === 'lesson' || c.type === 'drag_drop' || c.type === 'fill_blanks')
         );
 
-        if (foundContent && user.current_level >= foundContent.level) {
+        // *** THIS IS THE FIX ***
+        // Check against the subject-specific level instead of a global one.
+        if (foundContent && user.subject_levels[foundContent.subject] >= foundContent.level) {
           setContent(foundContent);
-          // Update skill proficiency when a lesson/activity is completed
           if (foundContent.skill_tags) {
             const updatedSkillProficiency = { ...user.progress_data.skillProficiency };
             foundContent.skill_tags.forEach(skill => {
-              // Set proficiency to 0.6 (60%) for completing a lesson/activity
-              updatedSkillProficiency[skill] = Math.max(updatedSkillProficiency[skill] || 0, 0.6); // Only increase
+              updatedSkillProficiency[skill] = Math.max(updatedSkillProficiency[skill] || 0, 0.6);
             });
-            // Calling updateUser here means it's a dependency for this useEffect
             updateUser({ ...user, progress_data: { ...user.progress_data, skillProficiency: updatedSkillProficiency } });
           }
         } else {
@@ -44,15 +43,12 @@ const Lesson = ({ navigate, currentPath }) => {
       }, 500);
     };
     fetchContent();
-    // Add updateUser to the dependency array. It's a stable function from context,
-    // but the linter wants it explicitly listed.
-  }, [contentId, user, updateUser]); // <--- ADDED updateUser HERE
+  }, [contentId, user, updateUser]);
 
-  const handleNext = async () => { // Made async to await updateUser
+  const handleNext = async () => {
     if (content && content.next_content_id) {
       const nextContent = initialContent.find(c => c.id === content.next_content_id);
       if (nextContent) {
-        // Update subject progress for the current content item's subject
         const updatedSubjectProgress = { ...user.progress_data.subjectProgress };
         updatedSubjectProgress[content.subject] = content.id;
         
@@ -63,7 +59,7 @@ const Lesson = ({ navigate, currentPath }) => {
             subjectProgress: updatedSubjectProgress
           }
         };
-        await updateUser(updatedUser); // Await update before navigating
+        await updateUser(updatedUser);
 
         if (nextContent.type === 'quiz' || nextContent.type === 'boss_battle') {
           navigate(`/quiz/${nextContent.id}`);
@@ -71,9 +67,8 @@ const Lesson = ({ navigate, currentPath }) => {
           navigate(`/learn/${nextContent.id}`);
         }
       } else {
-        // If next_content_id leads to nowhere, assume end of subject path for this level
         const updatedSubjectProgress = { ...user.progress_data.subjectProgress };
-        updatedSubjectProgress[content.subject] = content.id; // Mark last item as completed
+        updatedSubjectProgress[content.subject] = content.id;
         const updatedUser = {
           ...user,
           progress_data: {
@@ -83,12 +78,11 @@ const Lesson = ({ navigate, currentPath }) => {
         };
         await updateUser(updatedUser);
         alert(`You've completed all content in ${content.subject} for Level ${content.level}!`);
-        navigate('/'); // Go back to dashboard
+        navigate('/');
       }
     } else {
-      // No next_content_id, meaning end of this content sequence
       const updatedSubjectProgress = { ...user.progress_data.subjectProgress };
-      updatedSubjectProgress[content.subject] = content.id; // Mark last item as completed
+      updatedSubjectProgress[content.subject] = content.id;
       const updatedUser = {
         ...user,
         progress_data: {
@@ -106,7 +100,6 @@ const Lesson = ({ navigate, currentPath }) => {
   if (error) return <div className="text-red-600 text-center mt-10">{error}</div>;
   if (!content) return <div className="text-center text-gray-600 mt-10">No content available.</div>;
 
-  // Render different content types
   const renderContent = () => {
     const contentData = JSON.parse(content.content_data);
 
@@ -137,13 +130,11 @@ const Lesson = ({ navigate, currentPath }) => {
           }
           if (allCorrect) {
             setDragDropFeedback('Excellent! All matches are correct!');
-            // Update skill proficiency for drag_drop
             if (content.skill_tags) {
               const updatedSkillProficiency = { ...user.progress_data.skillProficiency };
               content.skill_tags.forEach(skill => {
                 updatedSkillProficiency[skill] = Math.max(updatedSkillProficiency[skill] || 0, 0.6);
               });
-              // Calling updateUser here means it's a dependency for renderContent and thus its parent Lesson
               updateUser({ ...user, progress_data: { ...user.progress_data, skillProficiency: updatedSkillProficiency } });
             }
             setTimeout(handleNext, 1500);
@@ -194,13 +185,11 @@ const Lesson = ({ navigate, currentPath }) => {
 
           if (allCorrect) {
             setFillBlanksFeedback('Fantastic! All blanks filled correctly!');
-            // Update skill proficiency for fill_blanks
             if (content.skill_tags) {
               const updatedSkillProficiency = { ...user.progress_data.skillProficiency };
               content.skill_tags.forEach(skill => {
                 updatedSkillProficiency[skill] = Math.max(updatedSkillProficiency[skill] || 0, 0.6);
               });
-              // Calling updateUser here means it's a dependency for renderContent and thus its parent Lesson
               updateUser({ ...user, progress_data: { ...user.progress_data, skillProficiency: updatedSkillProficiency } });
             }
             setTimeout(handleNext, 1500);
@@ -255,8 +244,7 @@ const Lesson = ({ navigate, currentPath }) => {
         >
           Back to Dashboard
         </button>
-        {/* The 'Continue' button for lessons/interactive types is now handled within renderContent's check functions */}
-        {(content.type === 'lesson') && ( // Only show continue for simple lessons that's don't have internal check buttons
+        {(content.type === 'lesson') && (
           <button
             onClick={handleNext}
             className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out"

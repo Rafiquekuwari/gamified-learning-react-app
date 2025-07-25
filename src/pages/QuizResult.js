@@ -6,11 +6,11 @@ const QuizResult = ({ navigate, locationState }) => {
   const { user } = useAuth();
   const score = locationState?.state?.score ?? 0;
   const total = locationState?.state?.total ?? 0;
-  const newLevel = locationState?.state?.newLevel ?? (user?.current_level || 1);
+  const newLevel = locationState?.state?.newLevel ?? 1;
+  const oldLevel = locationState?.state?.oldLevel ?? 1;
+  const subject = locationState?.state?.subject;
   const quizSkills = locationState?.state?.quizSkills || [];
-  // const quizPassed = locationState?.state?.quizPassed ?? false;
-  const nextContentId = locationState?.state?.nextContentId; // Retrieve nextContentId
-
+  const nextContentId = locationState?.state?.nextContentId;
 
   if (!user || total < 0) {
     return (
@@ -26,13 +26,11 @@ const QuizResult = ({ navigate, locationState }) => {
   const percentage = total > 0 ? (score / total) * 100 : 0;
 
   const handlePracticeMore = () => {
-    // Navigate to a practice page, passing the skills to practice
     navigate('/practice', { state: { skillsToPractice: quizSkills } });
   };
 
   const handleContinueLearning = () => {
     if (nextContentId) {
-      // Determine if nextContentId leads to a quiz/boss_battle or lesson/activity
       const nextContentItem = initialContent.find(c => c.id === nextContentId);
       if (nextContentItem) {
         if (nextContentItem.type === 'quiz' || nextContentItem.type === 'boss_battle') {
@@ -41,10 +39,10 @@ const QuizResult = ({ navigate, locationState }) => {
           navigate(`/learn/${nextContentItem.id}`);
         }
       } else {
-        navigate('/'); // Fallback to dashboard if next content not found
+        navigate('/');
       }
     } else {
-      navigate('/'); // Fallback to dashboard if no nextContentId
+      navigate('/');
     }
   };
 
@@ -55,8 +53,8 @@ const QuizResult = ({ navigate, locationState }) => {
       {percentage >= 70 ? (
         <>
           <p className="text-green-600 text-2xl font-bold mb-4">Hooray! You completed the quiz successfully!</p>
-          {newLevel > user.current_level ? (
-            <p className="text-xl text-gray-800 mb-6">You have leveled up to **Level {user.current_level}**! Keep up the good work!</p>
+          {newLevel > oldLevel ? (
+            <p className="text-xl text-gray-800 mb-6">You have leveled up to **Level {newLevel}** in {subject}! Keep up the good work!</p>
           ) : (
             <p className="text-xl text-gray-800 mb-6">You've mastered this! Ready for more challenges?</p>
           )}
@@ -64,7 +62,7 @@ const QuizResult = ({ navigate, locationState }) => {
       ) : (
         <>
           <p className="text-orange-600 text-2xl font-bold mb-4">You're doing well, keep practicing!</p>
-          <p className="text-xl text-gray-800 mb-6">Let's review Level {user.current_level} concepts before moving on.</p>
+          <p className="text-xl text-gray-800 mb-6">Let's review Level {oldLevel} concepts in {subject} before moving on.</p>
           <button
             onClick={handlePracticeMore}
             className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out mt-4"
@@ -76,10 +74,10 @@ const QuizResult = ({ navigate, locationState }) => {
 
       <div className="flex justify-between mt-8">
         <button
-          onClick={handleContinueLearning} // Use the new handler
+          onClick={handleContinueLearning}
           className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out mr-4"
         >
-          Continue Learning (Level {user.current_level})
+          Continue Learning
         </button>
         <button
           onClick={() => navigate('/')}

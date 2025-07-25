@@ -10,15 +10,16 @@ const Quiz = ({ navigate, currentPath }) => {
   const [feedback, setFeedback] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [userAnswers, setUserAnswers] = useState({}); // State to store answers for all questions in the quiz
+  const [userAnswers, setUserAnswers] = useState({});
   const { user, updateUser } = useAuth();
-  const quizQuestionsRef = useRef([]); // To store parsed questions
+  const quizQuestionsRef = useRef([]);
 
   useEffect(() => {
     const fetchQuiz = () => {
       setTimeout(() => {
         const content = initialContent.find(c => c.id === quizId && (c.type === 'quiz' || c.type === 'boss_battle'));
-        if (content && user.current_level >= content.level) {
+        
+        if (content && user.subject_levels[content.subject] >= content.level) {
           setQuizContent(content);
           quizQuestionsRef.current = JSON.parse(content.content_data);
           setLoading(false);
@@ -28,7 +29,9 @@ const Quiz = ({ navigate, currentPath }) => {
         }
       }, 500);
     };
-    fetchQuiz();
+    if(user) {
+      fetchQuiz();
+    }
   }, [quizId, user]);
 
   const currentQuestion = quizQuestionsRef.current[currentQuestionIndex];
@@ -39,70 +42,57 @@ const Quiz = ({ navigate, currentPath }) => {
       return;
     }
 
-    // Store the answer for the current question
     const updatedUserAnswers = {
       ...userAnswers,
       [currentQuestionIndex]: selectedOption
     };
-    setUserAnswers(updatedUserAnswers); // Update state
+    setUserAnswers(updatedUserAnswers);
 
     let newPoints = user.points;
-    // REMOVE THIS LINE: let isCorrect = false; <--- THIS IS THE FIX
 
     if (selectedOption === currentQuestion.answer) {
-      // REMOVE THIS LINE: isCorrect = true; <--- THIS IS THE FIX
-      newPoints += 2; // Award 2 points for correct answer in quiz/boss battle
+      newPoints += 2;
       setFeedback(currentQuestion.feedback_correct || 'Correct!');
     } else {
       setFeedback(currentQuestion.feedback_incorrect || 'Incorrect. Try again!');
     }
 
-    // Update user points immediately after each question
     const updatedUserPoints = { ...user, points: newPoints };
     await updateUser(updatedUserPoints);
 
-    // Move to next question or end quiz after feedback
     setTimeout(() => {
       setFeedback('');
-      setSelectedOption(null); // Clear selection for next question
+      setSelectedOption(null);
 
-      // Determine if this is the last question
       const isLastQuestion = currentQuestionIndex === quizQuestionsRef.current.length - 1;
 
       if (isLastQuestion) {
-        // Calculate final score immediately for the last question
         let finalScore = 0;
         const totalQuestions = quizQuestionsRef.current.length;
 
-        // Use the *latest* updatedUserAnswers for final calculation
         quizQuestionsRef.current.forEach((q, index) => {
-          if (updatedUserAnswers[index] === q.answer) { // Use updatedUserAnswers here, which includes the current question's answer
+          if (updatedUserAnswers[index] === q.answer) {
             finalScore += 1;
           }
         });
 
-        // The 'quizPassed' variable is used here, but it's passed to navigate, not directly rendered.
-        // It's effectively used, so this line is fine and not causing a warning.
         const quizPassed = (finalScore / totalQuestions) >= 0.7;
-        let newLevel = user.current_level;
-        let finalPoints = newPoints; // Use newPoints updated from current submission
-
-        // Update skill proficiency based on overall quiz percentage (more granular)
+        const subjectOfQuiz = quizContent.subject;
+        const currentSubjectLevel = user.subject_levels[subjectOfQuiz];
+        let newSubjectLevel = currentSubjectLevel; // Default to the current level
+        let finalPoints = newPoints;
         const updatedSkillProficiency = { ...user.progress_data.skillProficiency };
         const finalScorePercentage = totalQuestions > 0 ? (finalScore / totalQuestions) : 0;
         
         if (quizContent.skill_tags) {
             quizContent.skill_tags.forEach(skill => {
-                // Directly set proficiency to the quiz percentage for the relevant skills
                 updatedSkillProficiency[skill] = finalScorePercentage;
             });
         }
 
-        // Update subject progress for the current content item's subject
         const updatedSubjectProgress = { ...user.progress_data.subjectProgress };
-        updatedSubjectProgress[quizContent.subject] = quizContent.id; // Mark this quiz as the last completed for the subject
+        updatedSubjectProgress[quizContent.subject] = quizContent.id;
 
-        // Update last quiz result for this subject
         const updatedLastQuizResult = { ...user.progress_data.lastQuizResult };
         updatedLastQuizResult[quizContent.subject] = { score: finalScore, total: totalQuestions, percentage: finalScorePercentage, level: quizContent.level };
 
@@ -116,31 +106,35 @@ const Quiz = ({ navigate, currentPath }) => {
             lastQuizResult: updatedLastQuizResult
         };
 
-
-        if (quizPassed && quizContent.next_content_id) {
+        // *** THIS IS THE NEW LEVELING LOGIC ***
+        if (quizPassed) {
+          if (quizContent.next_content_id) {
             const nextContentItem = initialContent.find(c => c.id === quizContent.next_content_id);
-            if (nextContentItem && nextContentItem.level > user.current_level) {
-                newLevel = nextContentItem.level; // Advance to the next level
+            // Only level up if the next content item exists and is on a higher level
+            if (nextContentItem && nextContentItem.level > currentSubjectLevel) {
+              newSubjectLevel = nextContentItem.level;
             }
-        } else if (quizPassed && !quizContent.next_content_id) {
-            // This is the absolute last content item and it was passed
-            newLevel = user.current_level + 1; // Or mark as completed all levels
+          } else {
+            // If this is the very last content for the subject, level up
+            newSubjectLevel = currentSubjectLevel + 1;
+          }
         }
 
 
         const updatedUserFinal = {
             ...user,
             points: finalPoints,
-            current_level: newLevel,
+            subject_levels: {
+                ...user.subject_levels,
+                [subjectOfQuiz]: newSubjectLevel
+            },
             progress_data: finalProgressData
         };
-        updateUser(updatedUserFinal); // Don't await, let it run in background
+        updateUser(updatedUserFinal);
 
-        // Navigate to quiz result page
-        navigate('/quiz-result', { state: { score: finalScore, total: totalQuestions, newLevel: newLevel, quizSkills: quizContent.skill_tags, quizPassed: quizPassed, nextContentId: quizContent.next_content_id } }); // Pass nextContentId
+        navigate('/quiz-result', { state: { score: finalScore, total: totalQuestions, newLevel: newSubjectLevel, oldLevel: currentSubjectLevel, quizPassed: quizPassed, nextContentId: quizContent.next_content_id, subject: subjectOfQuiz } });
 
       } else {
-        // Not the last question, just advance to the next one
         setCurrentQuestionIndex(prevIndex => prevIndex + 1);
       }
     }, 1500);

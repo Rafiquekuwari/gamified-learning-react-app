@@ -36,6 +36,16 @@ export const AuthProvider = ({ children }) => {
   const ensureUserDataStructure = (userData) => {
     const updatedUser = { ...userData };
 
+    // REMOVED current_level and ADDED subject_levels
+    if (updatedUser.current_level) {
+        delete updatedUser.current_level;
+    }
+
+    if (!updatedUser.subject_levels) {
+      updatedUser.subject_levels = { math: 1, literacy: 1, science: 1 };
+    }
+
+
     if (!updatedUser.progress_data) {
       updatedUser.progress_data = {};
     }
@@ -109,7 +119,7 @@ export const AuthProvider = ({ children }) => {
             username,
             password,
             id: Date.now().toString(),
-            current_level: 1,
+            subject_levels: { math: 1, literacy: 1, science: 1 }, // CHANGED
             points: 0,
             avatar_choice: 'https://placehold.co/35x35/4CAF50/fff?text=😊', // Default avatar
             avatar_items: [], // New: owned avatar items
