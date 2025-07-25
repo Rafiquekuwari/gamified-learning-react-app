@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
-import AICompanion from './components/AICompanion';
+// import AICompanion from './components/AICompanion'; // REMOVED
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -56,7 +56,7 @@ const AppContent = ({ currentPath, navigate, locationState }) => {
     ComponentToRender = () => <Quiz navigate={navigate} currentPath={currentPath} />;
   } else if (currentPath === '/quiz-result') {
     ComponentToRender = () => <QuizResult navigate={navigate} locationState={locationState} />;
-  } 
+  }
    else if (currentPath === '/practice') {
     ComponentToRender = () => <PracticePage navigate={navigate} locationState={locationState} />;
   } else {
@@ -69,7 +69,7 @@ const AppContent = ({ currentPath, navigate, locationState }) => {
       <div className="p-4">
         {ComponentToRender()}
       </div>
-      <AICompanion />
+      {/* <AICompanion /> */} {/* REMOVED */}
     </div>
   );
 };
